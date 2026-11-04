@@ -1,0 +1,15 @@
+{% extends "social/base.html" %}
+{% block title %}{% if is_create %}Create a post{% else %}Edit post{% endif %} · CONNECTLY{% endblock %}
+{% block content %}
+<div class="narrow-page">
+  <a class="back-link" href="{% if post %}{% url 'profile' user.username %}{% else %}{% url 'feed' %}{% endif %}">← Back</a>
+  <div class="page-heading compact-heading"><div><span class="eyebrow">{% if is_create %}A MOMENT WORTH KEEPING{% else %}MAKE IT YOURS{% endif %}</span><h1>{% if is_create %}Share something good{% else %}Edit your post{% endif %}</h1><p>Life is made up of little things. Share one.</p></div></div>
+  <form method="post" enctype="multipart/form-data" class="form-card" data-image-preview-form>{% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+    <label for="{{ form.caption.id_for_label }}">Your words</label>{{ form.caption }}{% if form.caption.errors %}<div class="field-error">{{ form.caption.errors }}</div>{% endif %}
+    <label for="{{ form.image.id_for_label }}">Add a photo <span class="muted">(optional · JPG, PNG or WebP, max 5 MB)</span></label>{{ form.image }}{% if form.image.errors %}<div class="field-error">{{ form.image.errors }}</div>{% endif %}
+    {% if post.image %}<img class="upload-preview" src="{{ post.image.url }}" alt="Current post image">{% else %}<img class="upload-preview" alt="Selected image preview" hidden>{% endif %}
+    <div class="form-footer"><span class="muted small">Your post will be visible to the CONNECTLY community.</span><button class="button button-primary" type="submit">{% if is_create %}Share post{% else %}Save changes{% endif %} <span>→</span></button></div>
+  </form>
+</div>
+{% endblock %}

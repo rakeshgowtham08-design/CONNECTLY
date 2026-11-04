@@ -1,0 +1,14 @@
+{% extends "social/base.html" %}
+{% block title %}Join CONNECTLY{% endblock %}
+{% block auth_content %}
+<main class="auth-layout">
+  <section class="auth-story"><a class="brand brand-light" href="{% url 'login' %}"><span class="brand-mark">c</span><span>connectly</span></a><div class="story-copy"><span class="eyebrow">YOUR SPACE TO CONNECT</span><h1>Life’s better<br><em>when it’s shared.</em></h1><p>Bring your favorite people a little closer. There’s always room for one more.</p></div><div class="story-foot">Good people. Good energy. Just you.</div></section>
+  <section class="auth-panel"><div class="auth-form-wrap"><span class="eyebrow">COME ON IN</span><h2>Find your people</h2><p class="muted">A few details and you’re home.</p>
+    <form method="post" class="stack-form">{% csrf_token %}
+      {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+      {% for field in form %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small class="field-help">{{ field.help_text|safe }}</small>{% endif %}{% if field.errors %}<div class="field-error">{{ field.errors }}</div>{% endif %}{% endfor %}
+      <button class="button button-primary button-wide" type="submit">Create your account <span aria-hidden="true">→</span></button>
+    </form><p class="auth-switch">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+  </div></section>
+</main>
+{% endblock %}

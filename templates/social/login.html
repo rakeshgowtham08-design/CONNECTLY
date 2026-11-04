@@ -1,0 +1,15 @@
+{% extends "social/base.html" %}
+{% block title %}Log in · CONNECTLY{% endblock %}
+{% block auth_content %}
+<main class="auth-layout">
+  <section class="auth-story"><a class="brand brand-light" href="{% url 'login' %}"><span class="brand-mark">c</span><span>connectly</span></a><div class="story-copy"><span class="eyebrow">A LITTLE CLOSER, EVERY DAY</span><h1>Your people.<br><em>Your kind of place.</em></h1><p>A softer corner of the internet, made for the moments worth sharing.</p></div><div class="story-foot">Find the good in your everyday.</div></section>
+  <section class="auth-panel"><div class="auth-form-wrap"><span class="eyebrow">WELCOME BACK</span><h2>Good to see you</h2><p class="muted">Pick up right where your people are.</p>
+    <form method="post" class="stack-form">{% csrf_token %}
+      {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+      <label for="{{ form.username.id_for_label }}">Username</label>{{ form.username }}{% if form.username.errors %}<div class="field-error">{{ form.username.errors }}</div>{% endif %}
+      <label for="{{ form.password.id_for_label }}">Password</label>{{ form.password }}{% if form.password.errors %}<div class="field-error">{{ form.password.errors }}</div>{% endif %}
+      <button class="button button-primary button-wide" type="submit">Log in <span aria-hidden="true">→</span></button>
+    </form><p class="auth-switch">New around here? <a href="{% url 'register' %}">Create an account</a></p>
+  </div></section>
+</main>
+{% endblock %}

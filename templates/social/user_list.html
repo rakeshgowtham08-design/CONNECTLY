@@ -1,0 +1,9 @@
+{% extends "social/base.html" %}
+{% block title %}{{ list_type|title }} · {{ person.username }} · CONNECTLY{% endblock %}
+{% block content %}
+<div class="narrow-page">
+  <a class="back-link" href="{% url 'profile' person.username %}">← Back to profile</a>
+  <div class="page-heading compact-heading"><div><span class="eyebrow">@{{ person.username }}</span><h1>{{ list_type|title }}</h1><p>Good connections make everything better.</p></div></div>
+  <section class="user-results">{% for account in people %}<div class="user-result">  <a class="person-link" href="{% url 'profile' account.username %}">{% if account.profile.image %}<img class="avatar avatar-lg" src="{{ account.profile.image.url }}" alt="">{% else %}<span class="avatar avatar-lg avatar-fallback">{{ account.username|first|upper }}</span>{% endif %}<span><strong>{{ account.profile.full_name|default:account.username }}</strong><small>@{{ account.username }}{% if account.profile.bio %} · {{ account.profile.bio|truncatechars:55 }}{% endif %}</small></span></a>{% if account != user %}<form method="post" action="{% url 'toggle_follow' account.username %}" data-ajax-form data-action="follow">{% csrf_token %}<button class="button {% if account.pk in followed_ids %}button-primary{% else %}button-outline{% endif %}" type="submit" aria-pressed="{% if account.pk in followed_ids %}true{% else %}false{% endif %}">{% if account.pk in followed_ids %}Following{% else %}Follow{% endif %}</button></form>{% endif %}</div>{% empty %}<div class="empty-state compact-empty"><div class="empty-illustration">♡</div><h2>No connections here yet</h2><p>It’s a lovely place to start.</p></div>{% endfor %}</section>
+</div>
+{% endblock %}

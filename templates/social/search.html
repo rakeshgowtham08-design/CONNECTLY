@@ -1,0 +1,11 @@
+{% extends "social/base.html" %}
+{% block title %}Find people · CONNECTLY{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">GOOD PEOPLE ARE OUT THERE</span><h1>Find your people</h1><p>Search by name or username and say hello.</p></div></div>
+<form class="search-box search-page-box" action="{% url 'search' %}" method="get" role="search"><span aria-hidden="true">⌕</span><input type="search" name="q" value="{{ query }}" placeholder="Try a name or username" aria-label="Search by name or username"><button class="button button-primary" type="submit">Search</button></form>
+{% if query %}<p class="results-label">{% if people %}People matching “{{ query }}”{% else %}No one found for “{{ query }}”{% endif %}</p>{% endif %}
+<section class="user-results">{% for person in people %}<div class="user-result">
+  <a class="person-link" href="{% url 'profile' person.username %}">{% if person.profile.image %}<img class="avatar avatar-lg" src="{{ person.profile.image.url }}" alt="">{% else %}<span class="avatar avatar-lg avatar-fallback">{{ person.username|first|upper }}</span>{% endif %}<span><strong>{{ person.profile.full_name|default:person.username }}</strong><small>@{{ person.username }}{% if person.profile.bio %} · {{ person.profile.bio|truncatechars:65 }}{% endif %}</small></span></a>
+  <form method="post" action="{% url 'toggle_follow' person.username %}" data-ajax-form data-action="follow">{% csrf_token %}<button class="button {% if person.pk in followed_ids %}button-primary{% else %}button-outline{% endif %}" type="submit" aria-pressed="{% if person.pk in followed_ids %}true{% else %}false{% endif %}">{% if person.pk in followed_ids %}Following{% else %}Follow{% endif %}</button></form>
+</div>{% empty %}{% if query %}<div class="empty-state compact-empty"><div class="empty-illustration">⌕</div><h2>No matches just yet</h2><p>Try a different spelling or search for a username.</p></div>{% else %}<div class="empty-state compact-empty"><div class="empty-illustration">⌕</div><h2>Who’s on your mind?</h2><p>Search for someone by name or username.</p></div>{% endif %}{% endfor %}</section>
+{% endblock %}

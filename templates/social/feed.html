@@ -1,0 +1,14 @@
+{% extends "social/base.html" %}
+{% block title %}{{ page_title }} · CONNECTLY{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><span class="eyebrow">{% if is_explore %}A LITTLE INSPIRATION{% else %}YOUR CORNER OF THE WORLD{% endif %}</span><h1>{{ page_title }}</h1><p>{% if is_explore %}Good things are happening out there.{% else %}A fresh look at what your people are up to.{% endif %}</p></div>
+  {% if not is_explore %}<a class="button button-soft desktop-create" href="{% url 'create_post' %}"><span>＋</span> Share a moment</a>{% endif %}
+</div>
+{% if not is_explore %}<section class="composer-prompt"><a class="person-link" href="{% url 'profile' user.username %}">{% if user.profile.image %}<img class="avatar avatar-md" src="{{ user.profile.image.url }}" alt="">{% else %}<span class="avatar avatar-md avatar-fallback">{{ user.username|first|upper }}</span>{% endif %}</a><a class="composer-input" href="{% url 'create_post' %}">What’s something good on your mind?</a><a class="composer-add" href="{% url 'create_post' %}" aria-label="Create post">＋</a></section>{% endif %}
+<section class="feed-list" aria-label="Posts">
+  {% for post in posts %}{% include "social/partials/post_card.html" with post=post %}{% empty %}
+    <div class="empty-state"><div class="empty-illustration">✳</div><span class="eyebrow">{% if is_explore %}A FRESH START{% else %}YOUR STORY STARTS HERE{% endif %}</span><h2>{% if is_explore %}It’s quiet for now.{% else %}Your feed is all yours.{% endif %}</h2><p>{% if is_explore %}When people share something, you’ll find it here. Be the first to post a moment.{% else %}Follow a few people or share a moment of your own to get things moving.{% endif %}</p><a class="button button-primary" href="{% if is_explore %}{% url 'create_post' %}{% else %}{% url 'explore' %}{% endif %}">{% if is_explore %}Create a post{% else %}Meet people{% endif %} <span>→</span></a></div>
+  {% endfor %}
+</section>
+{% endblock %}

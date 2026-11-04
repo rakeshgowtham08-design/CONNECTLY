@@ -1,0 +1,15 @@
+{% extends "social/base.html" %}
+{% block title %}Edit profile · CONNECTLY{% endblock %}
+{% block content %}
+<div class="narrow-page">
+  <a class="back-link" href="{% url 'profile' user.username %}">← Back to profile</a>
+  <div class="page-heading compact-heading"><div><span class="eyebrow">MAKE YOURSELF AT HOME</span><h1>Edit your profile</h1><p>Let people know a little more about you.</p></div></div>
+  <form method="post" enctype="multipart/form-data" class="form-card" data-image-preview-form>{% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="profile-photo-edit">{% if user.profile.image %}<img class="avatar avatar-lg" src="{{ user.profile.image.url }}" alt="Current profile photo">{% else %}<span class="avatar avatar-lg avatar-fallback">{{ user.username|first|upper }}</span>{% endif %}<div><strong>Your profile photo</strong><small>Square images look best. Maximum 5 MB.</small></div></div>
+    {% for field in form %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="field-error">{{ field.errors }}</div>{% endif %}{% endfor %}
+    <img class="upload-preview" alt="Selected profile photo preview" hidden>
+    <div class="form-footer"><span class="muted small">Username: @{{ user.username }}</span><button class="button button-primary" type="submit">Save profile <span>→</span></button></div>
+  </form>
+</div>
+{% endblock %}

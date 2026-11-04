@@ -1,0 +1,19 @@
+{% extends "social/base.html" %}
+{% block title %}{{ person.profile.full_name|default:person.username }} · CONNECTLY{% endblock %}
+{% block content %}
+<div class="profile-page">
+  <section class="profile-card">
+    <div class="profile-cover"></div>
+    <div class="profile-overview">
+      {% if person.profile.image %}<img class="avatar avatar-xl profile-avatar" src="{{ person.profile.image.url }}" alt="{{ person.username }}’s profile photo">{% else %}<span class="avatar avatar-xl avatar-fallback profile-avatar">{{ person.username|first|upper }}</span>{% endif %}
+      <div class="profile-topline"><div><span class="eyebrow">A CONNECTLY MEMBER</span><h1>{{ person.profile.full_name|default:person.username }}</h1><p class="profile-handle">@{{ person.username }}</p></div>
+        {% if person == user %}<a class="button button-outline" href="{% url 'edit_profile' %}">Edit profile</a>{% else %}<form method="post" action="{% url 'toggle_follow' person.username %}" data-ajax-form data-action="follow">{% csrf_token %}<button class="button {% if is_following %}button-outline{% else %}button-primary{% endif %}" type="submit" aria-pressed="{{ is_following|yesno:'true,false' }}">{% if is_following %}Following{% else %}Follow{% endif %}</button></form>{% endif %}
+      </div>
+      {% if person.profile.bio %}<p class="profile-bio">{{ person.profile.bio|linebreaksbr }}</p>{% else %}<p class="profile-bio muted">Still writing their story.</p>{% endif %}
+      <div class="profile-stats"><a href="{% url 'followers' person.username %}"><strong data-followers-count>{{ person.followers.count }}</strong><span>followers</span></a><a href="{% url 'following' person.username %}"><strong>{{ person.following.count }}</strong><span>following</span></a><div><strong>{{ posts.count }}</strong><span>posts</span></div></div>
+    </div>
+  </section>
+  <div class="profile-post-heading"><div><span class="eyebrow">THE GOOD STUFF</span><h2>{{ person.profile.full_name|default:person.username }}’s posts</h2></div></div>
+  <section class="feed-list">{% for post in posts %}{% include "social/partials/post_card.html" with post=post %}{% empty %}<div class="empty-state compact-empty"><div class="empty-illustration">✳</div><h2>No moments shared yet</h2><p>{% if person == user %}Your first post doesn’t have to be perfect. It just has to be yours.{% else %}Check back when {{ person.profile.full_name|default:person.username }} shares something.{% endif %}</p>{% if person == user %}<a class="button button-primary" href="{% url 'create_post' %}">Share a moment</a>{% endif %}</div>{% endfor %}</section>
+</div>
+{% endblock %}

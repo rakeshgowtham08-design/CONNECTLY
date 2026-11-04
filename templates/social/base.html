@@ -1,0 +1,71 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8fc">
+  <title>{% block title %}CONNECTLY — find your people{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'style.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+{% if user.is_authenticated %}
+  <div class="app-shell">
+    <aside class="left-rail">
+      <a class="brand" href="{% url 'feed' %}"><span class="brand-mark">c</span><span>connectly</span></a>
+      <nav class="primary-nav" aria-label="Main navigation">
+        <a class="nav-link {% if request.resolver_match.url_name == 'feed' %}active{% endif %}" href="{% url 'feed' %}"><span class="nav-icon">⌂</span>Home</a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'explore' %}active{% endif %}" href="{% url 'explore' %}"><span class="nav-icon">⌕</span>Explore</a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'create_post' %}active{% endif %}" href="{% url 'create_post' %}"><span class="nav-icon">＋</span>Create post</a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}" href="{% url 'notifications' %}"><span class="nav-icon">♡</span>Notifications{% if unread_notifications_count %}<span class="nav-dot"></span>{% endif %}</a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" href="{% url 'profile' user.username %}"><span class="nav-icon">◉</span>My profile</a>
+      </nav>
+      <div class="rail-bottom">
+        <a class="mini-account" href="{% url 'profile' user.username %}">
+          {% if user.profile.image %}<img class="avatar avatar-sm" src="{{ user.profile.image.url }}" alt="">{% else %}<span class="avatar avatar-sm avatar-fallback">{{ user.username|first|upper }}</span>{% endif %}
+          <span><strong>{{ user.profile.full_name|default:user.username }}</strong><small>@{{ user.username }}</small></span>
+        </a>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="nav-link signout" type="submit"><span class="nav-icon">↗</span>Log out</button></form>
+      </div>
+    </aside>
+    <main class="main-column">
+      <header class="mobile-topbar"><a class="brand" href="{% url 'feed' %}"><span class="brand-mark">c</span><span>connectly</span></a><a class="topbar-avatar" href="{% url 'profile' user.username %}">{% if user.profile.image %}<img class="avatar avatar-sm" src="{{ user.profile.image.url }}" alt="Your profile">{% else %}<span class="avatar avatar-sm avatar-fallback">{{ user.username|first|upper }}</span>{% endif %}</a></header>
+      {% if messages %}<div class="toast-stack" aria-live="polite">{% for message in messages %}<div class="toast toast-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+      {% block content %}{% endblock %}
+    </main>
+    <aside class="right-rail">
+      <form class="search-box" action="{% url 'search' %}" method="get" role="search"><span aria-hidden="true">⌕</span><input type="search" name="q" value="{{ request.GET.q }}" placeholder="Search people" aria-label="Search people"></form>
+      <section class="side-card suggestions">
+        <div class="section-heading"><div><span class="eyebrow">YOUR NEXT HELLO</span><h2>People to know</h2></div><a href="{% url 'explore' %}" class="text-link">Explore</a></div>
+        {% for person in suggested_users %}
+          <div class="suggestion-row">
+            <a class="person-link" href="{% url 'profile' person.username %}">
+              {% if person.profile.image %}<img class="avatar avatar-md" src="{{ person.profile.image.url }}" alt="">{% else %}<span class="avatar avatar-md avatar-fallback">{{ person.username|first|upper }}</span>{% endif %}
+              <span><strong>{{ person.profile.full_name|default:person.username }}</strong><small>@{{ person.username }}</small></span>
+            </a>
+            <form method="post" action="{% url 'toggle_follow' person.username %}" data-ajax-form>{% csrf_token %}<button class="follow-mini" type="submit" aria-label="Follow {{ person.username }}">+</button></form>
+          </div>
+        {% empty %}<p class="muted small">You’re all caught up with everyone here.</p>{% endfor %}
+      </section>
+      <div class="right-footer"><span>Make room for good things.</span><span>© 2026 CONNECTLY</span></div>
+    </aside>
+  </div>
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <a class="{% if request.resolver_match.url_name == 'feed' %}active{% endif %}" href="{% url 'feed' %}" aria-label="Home">⌂</a>
+    <a class="{% if request.resolver_match.url_name == 'explore' %}active{% endif %}" href="{% url 'explore' %}" aria-label="Explore">⌕</a>
+    <a class="mobile-create" href="{% url 'create_post' %}" aria-label="Create post">＋</a>
+    <a class="{% if request.resolver_match.url_name == 'notifications' %}active{% endif %}" href="{% url 'notifications' %}" aria-label="Notifications">♡</a>
+    <a class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}" href="{% url 'profile' user.username %}" aria-label="Profile">◉</a>
+  </nav>
+{% else %}
+  {% if messages %}<div class="toast-stack auth-toasts" aria-live="polite">{% for message in messages %}<div class="toast toast-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+  {% block auth_content %}{% endblock %}
+{% endif %}
+<script src="{% static 'app.js' %}" defer></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

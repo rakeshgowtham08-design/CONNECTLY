@@ -1,0 +1,22 @@
+<article class="post-card" id="post-{{ post.pk }}">
+  <header class="post-header">
+    <a class="person-link" href="{% url 'profile' post.author.username %}">
+      {% if post.author.profile.image %}<img class="avatar avatar-md" src="{{ post.author.profile.image.url }}" alt="">{% else %}<span class="avatar avatar-md avatar-fallback">{{ post.author.username|first|upper }}</span>{% endif %}
+      <span><strong>{{ post.author.profile.full_name|default:post.author.username }}</strong><small>@{{ post.author.username }} · {{ post.created_at|date:"M j, g:i A" }}</small></span>
+    </a>
+    {% if post.author_id == user.id %}<details class="post-menu"><summary aria-label="Post options">···</summary><div class="menu-popover"><a href="{% url 'edit_post' post.pk %}">Edit post</a><form method="post" action="{% url 'delete_post' post.pk %}" data-confirm="Delete this post? This can’t be undone.">{% csrf_token %}<button type="submit">Delete post</button></form></div></details>{% endif %}
+  </header>
+  {% if post.caption %}<p class="post-caption">{{ post.caption|linebreaksbr }}</p>{% endif %}
+  {% if post.image %}<div class="post-image-wrap"><img class="post-image" src="{{ post.image.url }}" alt="Image shared by {{ post.author.username }}" loading="lazy"></div>{% endif %}
+  <div class="post-stats"><span data-like-count>{{ post.likes_total|default:post.likes.count }} like{{ post.likes_total|default:post.likes.count|pluralize }}</span><a href="#comments-{{ post.pk }}">{{ post.comments_total|default:post.comments.count }} comment{{ post.comments_total|default:post.comments.count|pluralize }}</a></div>
+  <div class="post-actions">
+    <form method="post" action="{% url 'toggle_like' post.pk %}" data-ajax-form data-action="like">{% csrf_token %}<button class="action-button {% if post.pk in liked_post_ids %}liked{% endif %}" type="submit" aria-pressed="{% if post.pk in liked_post_ids %}true{% else %}false{% endif %}"><span class="action-icon">♡</span><span>{% if post.pk in liked_post_ids %}Liked{% else %}Like{% endif %}</span></button></form>
+    <a class="action-button" href="#comment-input-{{ post.pk }}"><span class="action-icon">◌</span><span>Comment</span></a>
+  </div>
+  <div class="comments" id="comments-{{ post.pk }}">
+    {% for comment in post.comments.all %}
+      <div class="comment-row" id="comment-{{ comment.pk }}"><a class="comment-user" href="{% url 'profile' comment.author.username %}">{{ comment.author.profile.full_name|default:comment.author.username }}</a><span>{{ comment.body }}</span>{% if comment.author_id == user.id %}<form method="post" action="{% url 'delete_comment' comment.pk %}" data-confirm="Delete your comment?">{% csrf_token %}<button class="delete-comment" aria-label="Delete comment" type="submit">×</button></form>{% endif %}</div>
+    {% endfor %}
+    <form class="comment-form" method="post" action="{% url 'add_comment' post.pk %}" data-ajax-form data-action="comment" data-post-id="{{ post.pk }}">{% csrf_token %}<label class="sr-only" for="comment-input-{{ post.pk }}">Write a comment</label><input id="comment-input-{{ post.pk }}" name="body" maxlength="500" placeholder="Add a thoughtful comment…" required><button type="submit" aria-label="Post comment">↑</button></form>
+  </div>
+</article>

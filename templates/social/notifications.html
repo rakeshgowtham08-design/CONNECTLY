@@ -1,0 +1,11 @@
+{% extends "social/base.html" %}
+{% block title %}Notifications · CONNECTLY{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">A LITTLE LOVE FROM YOUR PEOPLE</span><h1>Notifications</h1><p>Good things happen when you show up for each other.</p></div>{% if unread_count %}<form method="post" action="{% url 'mark_notifications_read' %}">{% csrf_token %}<button class="button button-outline" type="submit">Mark all read</button></form>{% endif %}</div>
+<section class="notification-list">{% for item in notifications %}<article class="notification-row {% if not item.is_read %}unread{% endif %}">
+  <a href="{% url 'profile' item.actor.username %}">{% if item.actor.profile.image %}<img class="avatar avatar-md" src="{{ item.actor.profile.image.url }}" alt="">{% else %}<span class="avatar avatar-md avatar-fallback">{{ item.actor.username|first|upper }}</span>{% endif %}</a>
+  <div class="notification-copy"><p><a href="{% url 'profile' item.actor.username %}"><strong>{{ item.actor.profile.full_name|default:item.actor.username }}</strong></a>
+  {% if item.notification_type == "like" %}liked your post.{% elif item.notification_type == "comment" %}commented on your post.{% else %}started following you.{% endif %}</p><small>{{ item.created_at|date:"M j, g:i A" }}</small></div>
+  {% if item.post %}<a class="notification-context" href="{% url 'profile' item.recipient.username %}#post-{{ item.post_id }}">View post →</a>{% endif %}
+</article>{% empty %}<div class="empty-state"><div class="empty-illustration">♡</div><span class="eyebrow">ALL CAUGHT UP</span><h2>Quiet in the best way</h2><p>When someone likes, comments, or follows you, you’ll see it here.</p><a class="button button-primary" href="{% url 'explore' %}">Explore CONNECTLY</a></div>{% endfor %}</section>
+{% endblock %}
