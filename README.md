@@ -1,6 +1,6 @@
 # CONNECTLY
 
-CONNECTLY is a Django social app with a server-rendered HTML frontend, CSS and vanilla JavaScript. It uses MongoDB Atlas through MongoDB's official Django MongoDB Backend when `MONGODB_URI` is set. Without that setting, local development and the test suite continue to use SQLite.
+CONNECTLY is a Django social app with a server-rendered HTML frontend, CSS and vanilla JavaScript. It uses MongoDB Atlas through MongoDB's official Django MongoDB Backend by default. Local SQLite use must be explicitly selected with `DJANGO_DATABASE=sqlite`.
 
 ## Database support and feature compatibility
 
@@ -37,10 +37,10 @@ python -m pip install -r requirements.txt
 python manage.py runserver
 ```
 
-For SQLite-only local tests or fallback development, explicitly unset the Mongo setting for that process:
+For SQLite-only local tests or development, explicitly select SQLite:
 
 ```bash
-MONGODB_URI= .venv-mongo/bin/python manage.py test
+DJANGO_DATABASE=sqlite .venv-mongo/bin/python manage.py test
 ```
 
 To run tests against Atlas, configure a dedicated test database/cluster. Django's MongoDB backend creates and drops a test database during test runs; do not point this at a production database.
@@ -53,7 +53,7 @@ The migration does not delete or modify the SQLite database. Keep `db.sqlite3`, 
 2. With the source SQLite database active, export all Django records to a private fixture:
 
    ```bash
-   MONGODB_URI= .venv-mongo/bin/python manage.py dumpdata --all --indent 2 --output connectly-sqlite.fixture.json
+   DJANGO_DATABASE=sqlite .venv-mongo/bin/python manage.py dumpdata --all --indent 2 --output connectly-sqlite.fixture.json
    chmod 600 connectly-sqlite.fixture.json
    ```
 
@@ -105,6 +105,7 @@ Set these in the Render service's Environment dashboard, not in `render.yaml` or
 ```text
 DJANGO_SECRET_KEY=<long-random-private-value>
 DJANGO_DEBUG=False
+DJANGO_DATABASE=mongodb
 DJANGO_ALLOWED_HOSTS=<your-service>.onrender.com
 DJANGO_CSRF_TRUSTED_ORIGINS=https://<your-service>.onrender.com
 MONGODB_URI=<Atlas mongodb+srv connection string>
@@ -115,11 +116,13 @@ Render's external hostname is also added to `ALLOWED_HOSTS` and CSRF trusted ori
 
 For durable media, also set the S3 variables above. `build.sh` installs dependencies, collects static files, and runs migrations. Verify the Render build logs and then run `check_mongodb` from a one-off shell or deploy check; verify registration, login, CRUD, and media on the deployed URL.
 
+Create the Render Web Service from `rakeshgowtham08-design/CONNECTLY`, branch `main`, and select the Singapore region. Set the build and start commands above. Keep `DJANGO_DEBUG=False`, set the listed environment variables in Render, and configure Atlas network access to permit connections from the deployed service.
+
 ## Checks and tests
 
 ```bash
 .venv-mongo/bin/python manage.py check
-MONGODB_URI= .venv-mongo/bin/python manage.py test
+DJANGO_DATABASE=sqlite .venv-mongo/bin/python manage.py test
 node --check js/app.js
 ```
 

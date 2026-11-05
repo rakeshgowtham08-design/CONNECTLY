@@ -12,9 +12,9 @@ def check_mongodb_connection():
     try:
         connection.ensure_connection()
         connection.database.command("ping")
+        connection.database.list_collection_names()
     except PyMongoError as exc:
         raise ConnectionError(
             "MongoDB Atlas could not be reached or rejected authentication. "
             "Check the MONGODB_URI credentials and Atlas network access list."
         ) from exc
-

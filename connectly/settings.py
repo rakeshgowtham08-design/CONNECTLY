@@ -9,13 +9,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
 
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY", "connectly-local-development-key-change-before-deploying"
-)
 DEBUG = os.environ.get("DJANGO_DEBUG", "1" if not os.environ.get("RENDER") else "0") == "1"
+DJANGO_SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "").strip()
+if not DEBUG and not DJANGO_SECRET_KEY:
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY must be set whenever DJANGO_DEBUG=False."
+    )
+SECRET_KEY = DJANGO_SECRET_KEY or "connectly-local-development-key-change-before-deploying"
 MONGODB_URI = os.environ.get("MONGODB_URI", "").strip()
 MONGODB_DATABASE = os.environ.get("MONGODB_DATABASE", "connectly").strip()
-MONGODB_ENABLED = bool(MONGODB_URI)
+DATABASE_BACKEND = os.environ.get("DJANGO_DATABASE", "mongodb").strip().lower()
+if DATABASE_BACKEND not in {"mongodb", "sqlite"}:
+    raise ImproperlyConfigured("DJANGO_DATABASE must be either 'mongodb' or 'sqlite'.")
+MONGODB_ENABLED = DATABASE_BACKEND == "mongodb"
+if MONGODB_ENABLED and not MONGODB_URI:
+    raise ImproperlyConfigured(
+        "MONGODB_URI is required when DJANGO_DATABASE=mongodb. "
+        "Set it in the environment or local .env, or explicitly set DJANGO_DATABASE=sqlite for local development."
+    )
 if MONGODB_ENABLED and not MONGODB_URI.startswith(("mongodb://", "mongodb+srv://")):
     raise ImproperlyConfigured("MONGODB_URI must be a MongoDB connection URI.")
 if MONGODB_ENABLED and not MONGODB_DATABASE:
@@ -26,13 +37,20 @@ if os.environ.get("RENDER") and not os.environ.get("DJANGO_SECRET_KEY"):
     raise ImproperlyConfigured("Set DJANGO_SECRET_KEY in the Render environment.")
 if os.environ.get("RENDER") and DEBUG:
     raise ImproperlyConfigured("Set DJANGO_DEBUG=False in the Render environment.")
+render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.environ.get(
-        "DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost"
+        "DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost" if DEBUG else ""
     ).split(",")
     if host.strip()
 ]
+if render_hostname and render_hostname not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(render_hostname)
+if not DEBUG and not ALLOWED_HOSTS:
+    raise ImproperlyConfigured(
+        "Set DJANGO_ALLOWED_HOSTS or configure RENDER_EXTERNAL_HOSTNAME in production."
+    )
 
 INSTALLED_APPS = [
     *(
@@ -173,9 +191,6 @@ if not DEBUG:
     if os.environ.get("RENDER"):
         SECURE_SSL_REDIRECT = True
         SECURE_HSTS_SECONDS = 31536000
-        render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
-        if render_hostname and render_hostname not in ALLOWED_HOSTS:
-            ALLOWED_HOSTS.append(render_hostname)
         if render_hostname:
             render_origin = f"https://{render_hostname}"
             if render_origin not in CSRF_TRUSTED_ORIGINS:
