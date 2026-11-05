@@ -3,6 +3,7 @@ import os
 import tempfile
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -20,6 +21,14 @@ def image_upload(name="tiny.png"):
     return SimpleUploadedFile(name, content.getvalue(), content_type="image/png")
 
 
+@override_settings(
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+        },
+    }
+)
 class ConnectlyFlowTests(TestCase):
     def setUp(self):
         self.media_directory = tempfile.TemporaryDirectory()
@@ -170,6 +179,8 @@ class ConnectlyFlowTests(TestCase):
         )
         self.client.post(follow_url, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
         self.assertFalse(Follow.objects.filter(follower=self.sam, following=self.alex).exists())
+        with self.assertRaises(ValidationError):
+            Follow.objects.create(follower=self.sam, following=self.sam)
 
     def test_upload_size_validation_and_protected_pages(self):
         self.client.force_login(self.sam)

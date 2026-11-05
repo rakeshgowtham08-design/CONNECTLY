@@ -7,11 +7,11 @@ from social.models import Profile
 
 @receiver(post_save, sender=get_user_model())
 def create_profile(sender, instance, created, **kwargs):
-    if created:
+    if created and not kwargs.get("raw", False):
         Profile.objects.create(user=instance)
 
 
 @receiver(post_save, sender=get_user_model())
 def save_profile(sender, instance, **kwargs):
-    if hasattr(instance, "profile"):
+    if not kwargs.get("raw", False) and hasattr(instance, "profile"):
         instance.profile.save()

@@ -3,7 +3,13 @@ __pycache__/
 *.sqlite3
 .env
 .venv/
+.venv-*/
 venv/
+.env.*
+!.env.example
 media/
 staticfiles/
 .DS_Store
+*.backup
+db_before_mongodb.sqlite3
+connectly-sqlite.fixture.json

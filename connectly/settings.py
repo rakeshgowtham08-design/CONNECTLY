@@ -1,13 +1,31 @@
 import os
-import dj_database_url
 from pathlib import Path
 
+import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY", "connectly-local-development-key-change-before-deploying"
 )
-DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
+DEBUG = os.environ.get("DJANGO_DEBUG", "1" if not os.environ.get("RENDER") else "0") == "1"
+MONGODB_URI = os.environ.get("MONGODB_URI", "").strip()
+MONGODB_DATABASE = os.environ.get("MONGODB_DATABASE", "connectly").strip()
+MONGODB_ENABLED = bool(MONGODB_URI)
+if MONGODB_ENABLED and not MONGODB_URI.startswith(("mongodb://", "mongodb+srv://")):
+    raise ImproperlyConfigured("MONGODB_URI must be a MongoDB connection URI.")
+if MONGODB_ENABLED and not MONGODB_DATABASE:
+    raise ImproperlyConfigured("MONGODB_DATABASE cannot be empty.")
+if os.environ.get("RENDER") and not MONGODB_ENABLED:
+    raise ImproperlyConfigured("Set MONGODB_URI in the Render environment.")
+if os.environ.get("RENDER") and not os.environ.get("DJANGO_SECRET_KEY"):
+    raise ImproperlyConfigured("Set DJANGO_SECRET_KEY in the Render environment.")
+if os.environ.get("RENDER") and DEBUG:
+    raise ImproperlyConfigured("Set DJANGO_DEBUG=False in the Render environment.")
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.environ.get(
@@ -17,9 +35,19 @@ ALLOWED_HOSTS = [
 ]
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
+    *(
+        [
+            "connectly.mongodb_apps.MongoAdminConfig",
+            "connectly.mongodb_apps.MongoAuthConfig",
+            "connectly.mongodb_apps.MongoContentTypesConfig",
+        ]
+        if MONGODB_ENABLED
+        else [
+            "django.contrib.admin",
+            "django.contrib.auth",
+            "django.contrib.contenttypes",
+        ]
+    ),
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
@@ -58,13 +86,32 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "connectly.wsgi.application"
 
-DATABASES = {
-    "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600,
-        ssl_require=not DEBUG,
-    )
-}
+if MONGODB_ENABLED:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django_mongodb_backend",
+            "HOST": MONGODB_URI,
+            "NAME": MONGODB_DATABASE,
+            "OPTIONS": {
+                "serverSelectionTimeoutMS": 10000,
+                "retryWrites": True,
+                "w": "majority",
+            },
+        }
+    }
+    MIGRATION_MODULES = {
+        "auth": "connectly.mongo_migrations.auth",
+        "contenttypes": "connectly.mongo_migrations.contenttypes",
+        "admin": "connectly.mongo_migrations.admin",
+    }
+else:
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+            conn_max_age=600,
+            ssl_require=not DEBUG,
+        )
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -86,7 +133,50 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    },
+}
+if os.environ.get("AWS_STORAGE_BUCKET_NAME"):
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "bucket_name": os.environ["AWS_STORAGE_BUCKET_NAME"],
+            "region_name": os.environ.get("AWS_S3_REGION_NAME", "us-east-1"),
+            "endpoint_url": os.environ.get("AWS_S3_ENDPOINT_URL") or None,
+            "default_acl": None,
+            "file_overwrite": False,
+        },
+    }
+
+DEFAULT_AUTO_FIELD = (
+    "django_mongodb_backend.fields.ObjectIdAutoField"
+    if MONGODB_ENABLED
+    else "django.db.models.BigAutoField"
+)
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "feed"
 LOGOUT_REDIRECT_URL = "login"
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    if os.environ.get("RENDER"):
+        SECURE_SSL_REDIRECT = True
+        SECURE_HSTS_SECONDS = 31536000
+        render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+        if render_hostname and render_hostname not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(render_hostname)
+        if render_hostname:
+            render_origin = f"https://{render_hostname}"
+            if render_origin not in CSRF_TRUSTED_ORIGINS:
+                CSRF_TRUSTED_ORIGINS.append(render_origin)
